@@ -67,7 +67,9 @@ public class InstrPythonClient extends PythonClient {
 		connection = getPerThreadConnection();
 
 		if (connection != null) {
-			connections.remove(connection);
+			synchronized (connections) {
+				connections.remove(connection);
+			}
 		}
 
 		if (connection == null || connection.getSocket() == null) {

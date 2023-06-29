@@ -201,11 +201,8 @@ public class PythonClient extends CallbackClient implements Py4JPythonClientPerT
 		connection = getPerThreadConnection();
 
 		if (connection != null) {
-			try {
-				lock.lock();
+			synchronized (connections) {
 				connections.remove(connection);
-			} finally {
-				lock.unlock();
 			}
 		}
 
@@ -235,11 +232,8 @@ public class PythonClient extends CallbackClient implements Py4JPythonClientPerT
 
 	@Override
 	protected void giveBackConnection(Py4JClientConnection cc) {
-		try {
-			lock.lock();
+		 synchronized (connections) {
 			connections.addLast(cc);
-		} finally {
-			lock.unlock();
 		}
 	}
 
@@ -264,12 +258,11 @@ public class PythonClient extends CallbackClient implements Py4JPythonClientPerT
 		try {
 			// Best effort to remove connections from deque
 			// In an ideal world, we should use a lock around connections, but it could be tricky (potential deadlock?)
-			lock.lock();
-			connections.remove(gatewayConnection);
+			synchronized (connections) {
+				connections.remove(gatewayConnection);
+			}
 		} catch (Exception e) {
 
-		} finally {
-			lock.unlock();
 		}
 	}
 

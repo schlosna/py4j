@@ -51,7 +51,9 @@ public class InstrCallbackClient extends CallbackClient {
 	protected Py4JClientConnection getConnection() throws IOException {
 		Py4JClientConnection connection = null;
 
-		connection = this.connections.pollLast();
+		synchronized (connections) {
+			connection = this.connections.pollLast();
+		}
 		if (connection == null) {
 			connection = new InstrCallbackConnection(port, address, socketFactory);
 			connection.start();

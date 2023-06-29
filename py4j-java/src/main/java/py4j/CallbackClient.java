@@ -69,8 +69,6 @@ public class CallbackClient implements Py4JPythonClient {
 
 	protected final Deque<Py4JClientConnection> connections = new ArrayDeque<Py4JClientConnection>();
 
-	protected final Lock lock = new ReentrantLock(true);
-
 	private final Logger logger = Logger.getLogger(CallbackClient.class.getName());
 
 	private boolean isShutdown = false;
@@ -232,7 +230,9 @@ public class CallbackClient implements Py4JPythonClient {
 	protected Py4JClientConnection getConnection() throws IOException {
 		Py4JClientConnection connection = null;
 
-		connection = connections.pollLast();
+		synchronized (connections) {
+			connection = connections.pollLast();
+		}
 		if (connection == null) {
 			connection = new CallbackConnection(port, address, socketFactory, readTimeout, authToken);
 			connection.start();
@@ -245,18 +245,17 @@ public class CallbackClient implements Py4JPythonClient {
 		Py4JClientConnection cc = null;
 		try {
 			logger.log(Level.INFO, "Getting CB Connection");
-			lock.lock();
-			if (!isShutdown) {
-				cc = getConnection();
-				logger.log(Level.INFO, "Acquired CB Connection");
-			} else {
-				logger.log(Level.INFO, "Shutting down, no connection can be created.");
+			synchronized (connections) {
+				if (!isShutdown) {
+					cc = getConnection();
+					logger.log(Level.INFO, "Acquired CB Connection");
+				} else {
+					logger.log(Level.INFO, "Shutting down, no connection can be created.");
+				}
 			}
 		} catch (Exception e) {
 			logger.log(Level.SEVERE, "Critical error while sending a command", e);
 			throw new Py4JException("Error while obtaining a new communication channel", e);
-		} finally {
-			lock.unlock();
 		}
 
 		return cc;
@@ -293,8 +292,7 @@ public class CallbackClient implements Py4JPythonClient {
 	}
 
 	protected void giveBackConnection(Py4JClientConnection cc) {
-		try {
-			lock.lock();
+		synchronized (connections) {
 			if (cc != null) {
 				if (!isShutdown) {
 					connections.addLast(cc);
@@ -302,8 +300,6 @@ public class CallbackClient implements Py4JPythonClient {
 					cc.shutdown();
 				}
 			}
-		} finally {
-			lock.unlock();
 		}
 	}
 
@@ -320,8 +316,7 @@ public class CallbackClient implements Py4JPythonClient {
 	 *
 	 */
 	public void periodicCleanup() {
-		try {
-			lock.lock();
+		synchronized (connections) {
 			if (!isShutdown) {
 				int size = connections.size();
 				for (int i = 0; i < size; i++) {
@@ -335,8 +330,6 @@ public class CallbackClient implements Py4JPythonClient {
 				}
 
 			}
-		} finally {
-			lock.unlock();
 		}
 	}
 
@@ -447,22 +440,22 @@ public class CallbackClient implements Py4JPythonClient {
 	@Override
 	public void shutdown() {
 		logger.info("Shutting down Callback Client");
-		try {
-			lock.lock();
-			if (isShuttingDown) {
-				return;
+		synchronized (connections) {
+			try {
+				if (isShuttingDown) {
+					return;
+				}
+				isShutdown = true;
+				isShuttingDown = true;
+				ArrayList<Py4JClientConnection> tempConnections = new ArrayList<Py4JClientConnection>(connections);
+				for (Py4JClientConnection cc : tempConnections) {
+					cc.shutdown();
+				}
+				executor.shutdownNow();
+				connections.clear();
+			} finally {
+				isShuttingDown = false;
 			}
-			isShutdown = true;
-			isShuttingDown = true;
-			ArrayList<Py4JClientConnection> tempConnections = new ArrayList<Py4JClientConnection>(connections);
-			for (Py4JClientConnection cc : tempConnections) {
-				cc.shutdown();
-			}
-			executor.shutdownNow();
-			connections.clear();
-		} finally {
-			isShuttingDown = false;
-			lock.unlock();
 		}
 	}
 }
