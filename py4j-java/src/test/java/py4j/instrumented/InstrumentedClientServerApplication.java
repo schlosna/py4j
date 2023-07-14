@@ -42,8 +42,7 @@ public class InstrumentedClientServerApplication {
 		InstrClientServer server2 = new InstrClientServer(GatewayServer.DEFAULT_PORT + 5,
 				GatewayServer.defaultAddress(), GatewayServer.DEFAULT_PYTHON_PORT + 5, GatewayServer.defaultAddress(),
 				GatewayServer.DEFAULT_CONNECT_TIMEOUT, GatewayServer.DEFAULT_READ_TIMEOUT,
-				GatewayServer.DEFAULT_CREATE_SOCKET_CONNECTION_TIMEOUT, ServerSocketFactory.getDefault(),
-				SocketFactory.getDefault(), this, false, true);
+				ServerSocketFactory.getDefault(), SocketFactory.getDefault(), this, false, true);
 		server2.startServer();
 	}
 
@@ -61,8 +60,7 @@ public class InstrumentedClientServerApplication {
 		InstrClientServer server2 = new InstrClientServer(GatewayServer.DEFAULT_PORT + 5,
 				GatewayServer.defaultAddress(), GatewayServer.DEFAULT_PYTHON_PORT + 5, GatewayServer.defaultAddress(),
 				GatewayServer.DEFAULT_CONNECT_TIMEOUT, GatewayServer.DEFAULT_READ_TIMEOUT,
-				GatewayServer.DEFAULT_CREATE_SOCKET_CONNECTION_TIMEOUT, ServerSocketFactory.getDefault(),
-				SocketFactory.getDefault(), this, false, true);
+				ServerSocketFactory.getDefault(), SocketFactory.getDefault(), this, false, true);
 		server2.startServer();
 
 		sayHello(server2);

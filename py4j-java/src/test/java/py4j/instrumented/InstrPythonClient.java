@@ -49,9 +49,9 @@ public class InstrPythonClient extends PythonClient {
 	public InstrPythonClient(Gateway gateway, List<Class<? extends Command>> customCommands, int pythonPort,
 			InetAddress pythonAddress, long minConnectionTime, TimeUnit minConnectionTimeUnit,
 			SocketFactory socketFactory, Py4JJavaServer javaServer, boolean enableMemoryManagement, int readTimeout,
-			int createSocketTimeout) {
+			int connectTimeout) {
 		super(gateway, customCommands, pythonPort, pythonAddress, minConnectionTime, minConnectionTimeUnit,
-				socketFactory, javaServer, enableMemoryManagement, readTimeout, createSocketTimeout);
+				socketFactory, javaServer, enableMemoryManagement, readTimeout, connectTimeout);
 		MetricRegistry.addCreatedObject(this);
 	}
 

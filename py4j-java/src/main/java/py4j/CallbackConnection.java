@@ -37,7 +37,6 @@ import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketAddress;
 import java.nio.charset.Charset;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -74,7 +73,7 @@ public class CallbackConnection implements Py4JClientConnection {
 
 	private final int blockingReadTimeout;
 
-	private final int createSocketTimeout;
+	private final int connectTimeout;
 
 	private final int nonBlockingReadTimeout;
 
@@ -86,7 +85,7 @@ public class CallbackConnection implements Py4JClientConnection {
 
 	public CallbackConnection(int port, InetAddress address, SocketFactory socketFactory) {
 		this(port, address, socketFactory, GatewayServer.DEFAULT_READ_TIMEOUT,
-				GatewayServer.DEFAULT_CREATE_SOCKET_CONNECTION_TIMEOUT);
+				GatewayServer.DEFAULT_CONNECT_TIMEOUT);
 	}
 
 	/**
@@ -101,8 +100,8 @@ public class CallbackConnection implements Py4JClientConnection {
 	 *            must absolutely be non-blocking.
 	 */
 	public CallbackConnection(int port, InetAddress address, SocketFactory socketFactory, int readTimeout,
-			int createSocketTimeout) {
-		this(port, address, socketFactory, readTimeout, createSocketTimeout, null);
+			int connectTimeout) {
+		this(port, address, socketFactory, readTimeout, connectTimeout, null);
 	}
 
 	/**
@@ -118,12 +117,12 @@ public class CallbackConnection implements Py4JClientConnection {
 	 * @param authToken Token for authenticating with the callback server.
 	 */
 	public CallbackConnection(int port, InetAddress address, SocketFactory socketFactory, int readTimeout,
-			int createSocketTimeout, String authToken) {
+							  int connectTimeout, String authToken) {
 		super();
 		this.port = port;
 		this.address = address;
 		this.socketFactory = socketFactory;
-		this.createSocketTimeout = createSocketTimeout;
+		this.connectTimeout = connectTimeout;
 		this.blockingReadTimeout = readTimeout;
 		if (readTimeout > 0) {
 			this.nonBlockingReadTimeout = readTimeout;
@@ -231,8 +230,14 @@ public class CallbackConnection implements Py4JClientConnection {
 	public void start() throws IOException {
 		logger.info("Starting Communication Channel on " + address + " at " + port);
 		socket = socketFactory.createSocket();
-		socket.connect(new InetSocketAddress(address, port), createSocketTimeout);
+		socket.setKeepAlive(true);
+		socket.setSoTimeout(connectTimeout); // bound handshake as well
+		socket.connect(new InetSocketAddress(address, port), connectTimeout);
 		socket.setSoTimeout(blockingReadTimeout);
+		socket.setKeepAlive(true);
+		if (socket.getLocalAddress().isLoopbackAddress()) {
+			socket.setTcpNoDelay(true);
+		}
 		reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), Charset.forName("UTF-8")));
 		writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), Charset.forName("UTF-8")));
 
